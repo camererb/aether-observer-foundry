@@ -107,10 +107,11 @@ Good to know:
 
 ## Sending maps from Vision
 
-1. On Aether Observer, open the story's **Settings** (there is a link on the Vision tab and on Session notes), open **Foundry link** and press **Make a Foundry link**. Copy the
-   link (it is only shown once; "Make a new link" replaces it and the old one stops working).
-2. In Foundry: Game Settings, Configure Settings, **Aether Observer**, paste it into **Vision link**. It is
-   kept on this computer only, so players never get it.
+1. Connect this Foundry to your account once: press **Connect to Aether Observer** in the Scenes tab and pick your TTRPG Log
+   (see "Connect to Aether Observer" below). There is nothing to paste.
+2. **Old pasted link (being retired):** a story that already has a Foundry link on Aether Observer keeps working with it
+   (Game Settings, Configure Settings, **Aether Observer**, **Vision link (old way)**), but a first one can no longer be made.
+   Connecting replaces it; once you have connected, turn the link off in the story's Settings, Foundry link.
 3. **Room maps:** on Vision, open the scene tab you want and pick **Map ▾, Send to Foundry**. Foundry brings it in
    within 5 seconds (or press **Sync from Vision** in the Scenes tab to do it at once and open the scene).
 4. **Hex areas:** in the Hex areas tab, open **More** and tick **Keep Foundry up to date**, or press **Send to Foundry**.
@@ -163,7 +164,7 @@ From a macro: `game.modules.get("aether-observer").api.sync()`.
   (cold blue) on the map give a small, steady light of their own. Turn it off to leave them out. Cave systems now put
   crystals in the Crystal Grotto, the Deep Cavern and sometimes the Lair.
 
-## Connect to Aether Observer (0.6.0, recommended)
+## Connect to Aether Observer
 
 Instead of pasting a link for each story, connect your account once:
 
@@ -176,7 +177,7 @@ Instead of pasting a link for each story, connect your account once:
 
 Maps and session notes then go through that story. See or remove your connections on Aether Observer at
 `/foundry/connect` (Your Foundry connections); removing one stops it at once. The key is kept in your browser only.
-A pasted Vision link still works when you are not connected.
+An old pasted link still works when you are not connected, until it is turned off.
 
 ## "Last time" handout (0.7.0)
 
@@ -188,8 +189,8 @@ confirmed and is still on.
 
 ## Session notes from Foundry journals
 
-1. On Aether Observer, open the story's **Settings**, **Foundry link**, and tick **Also let Foundry send session notes**. The same Vision link
-   is used; nothing new to paste.
+1. When you approve the connection on Aether Observer, tick **Also let it send session notes**. (An old pasted link has its own
+   tick under the story's Settings, Foundry link.)
 2. In Foundry, right-click a journal entry and pick **Send to Aether Observer**, or press the same button at the top of an open entry.
    If the entry has several text pages, you are asked whether to send the whole entry, one page, or every page as its own notes.
    Right-click a journal folder and pick **Send folder to Aether Observer** to send every entry in it and its subfolders.
