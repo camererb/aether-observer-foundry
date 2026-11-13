@@ -1,28 +1,87 @@
-# Aether Observer (Foundry VTT module)
+# Aether Observer for Foundry VTT
 
-The one Foundry module for [Aether Observer](https://aetherobserver.com). What it does:
+[![Latest release](https://img.shields.io/github/v/release/camererb/aether-observer-foundry?label=release)](https://github.com/camererb/aether-observer-foundry/releases/latest)
+[![Licence: MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](LICENSE)
+![Foundry v12 to v13](https://img.shields.io/badge/Foundry-v12%20%E2%80%93%20v13-orange)
 
-- **Vision** (now): battle maps and hex maps for your table, as Foundry scenes. Details below.
-- **Session notes** (new, 0.5.0): send your Foundry journal entries, or a whole folder of them, to your Aether Observer game log as session notes.
+**Battle maps and hex maps in one click, and your session notes sent to a game log that remembers.**
 
-## Vision
+The module connects Foundry to [Aether Observer](https://aetherobserver.com), a persistent world journal for tabletop games:
+you record what happened, and the world remembers it. It has two parts, and you can use either one:
 
-Free battle maps and hex maps for your table, inside Foundry.
+- **Vision**: maps made by voice or typing on [Vision](https://aetherobserver.com/aether-vision-maps) arrive in Foundry as
+  scenes with the picture, grid and scale, walls, doors and torch lights. Hex area maps arrive as your players see them.
+- **Session notes**: send a journal entry, or a whole folder of them, to your Aether Observer game log as session notes,
+  with the folder structure kept in the names.
 
-- **Free, no account:** press **Import sample maps** in the Scenes tab to bring in eight ready-made scenes (picture, grid, walls,
-  doors and lights): the Ashvale (a 10 by 10 hex region, with a town, a cave and some ruins on it), the town of Coldharbour,
-  the Blue Lantern inn, Greyfang Cave and the Ruins of Old Harrow (each with its lower level as a scene of its own) and a
-  river crossing. The same maps come with a free Aether Observer game log.
-- **Your own maps:** make them by voice or typing on [Vision](https://aetherobserver.com/aether-vision) (part of
-  [Aether Observer](https://aetherobserver.com), a persistent world journal where the world remembers every event). Aether
-  Vision itself is free; linking your own maps to Foundry is part of Aether Observer's paid plans.
-- The module is free and open source (MIT).
+<p align="center">
+  <img src="images/hex-region.jpg" alt="The Ashvale, a ten by ten hex region map with a town, a cave and ruins" width="48%">
+  <img src="images/town.jpg" alt="Coldharbour, a town battle map drawn like a pen and ink sketch" width="48%">
+</p>
+<p align="center">
+  <img src="images/cave.jpg" alt="Greyfang Cave, a cave battle map" width="48%">
+  <img src="images/inn.jpg" alt="The Blue Lantern, an inn floor plan" width="48%">
+</p>
+<p align="center"><sub>Four of the eight free sample maps, as they arrive in Foundry.</sub></p>
 
-Brings the map you made in Vision into a Foundry scene: the picture, the grid and its scale, walls, doors and
-torch lights. 
+## Try it free in a minute
 
-Works with Foundry **v13** (written for it) and **v12**, self-hosted or on **The Forge**. This is a new module: if something doesn't work in your
-Foundry, please open an issue.
+No account and no link needed.
+
+1. Install the module (below) and turn it on in your world.
+2. Open the **Scenes** tab as the GM and press **Import sample maps**.
+3. Eight ready-made scenes appear in a **Vision** folder, with walls, doors and lights already in place: a hex region (the
+   Ashvale), a town (Coldharbour), an inn, two dungeons with a lower level each, and a river crossing.
+
+## Install
+
+**From Foundry (self-hosted or The Forge):** open **Install Module**, paste this into **Manifest URL**, and press **Install**:
+
+```
+https://github.com/camererb/aether-observer-foundry/releases/latest/download/module.json
+```
+
+Then, in your world: **Game Settings, Manage Modules**, tick **Aether Observer**, and save.
+
+**By hand (self-hosted):** download `aether-observer.zip` from the [latest release](https://github.com/camererb/aether-observer-foundry/releases/latest),
+unzip it into `Data/modules/aether-observer/` (so `module.json` sits directly inside that folder), restart Foundry, and turn
+the module on as above.
+
+Works with Foundry **v13** (written for it) and **v12**. This is a new module and has had little time in the wild: if
+something doesn't work in your Foundry, please [open an issue](https://github.com/camererb/aether-observer-foundry/issues)
+and say which Foundry version you use.
+
+## Use your own maps and notes
+
+Importing the sample maps is free. Bringing in **your own** maps and sending session notes needs an Aether Observer account on
+a paid plan (see [aetherobserver.com/pricing](https://aetherobserver.com/pricing)). Vision itself is free to use on the website.
+
+1. Press **Connect to Aether Observer** in the Scenes tab. A page opens on the site; sign in, check the code, and approve it.
+2. Pick which TTRPG Log this Foundry world uses.
+3. Maps you send from Vision arrive by themselves (or press **Sync from Vision**). Right-click a journal entry or folder and
+   pick **Send to Aether Observer** to send notes.
+
+More detail on each of these is further down.
+
+## What it does and doesn't do
+
+- It makes and updates **only its own** scenes, walls and lights. Anything you draw or place by hand is left alone.
+- Your players never see the connection: it is kept in the GM's browser only.
+- Notes go to your game log as **drafts**. Nothing becomes part of your world's history until you publish it on the site.
+- It runs in the GM's browser and talks only to `aetherobserver.com`. See [SECURITY.md](SECURITY.md) for exactly what it
+  sends and how to report a problem.
+
+## Links
+
+- Website: [aetherobserver.com](https://aetherobserver.com)
+- Vision (the map maker): [aetherobserver.com/aether-vision-maps](https://aetherobserver.com/aether-vision-maps)
+- Pricing: [aetherobserver.com/pricing](https://aetherobserver.com/pricing)
+- Questions and bugs: [Issues](https://github.com/camererb/aether-observer-foundry/issues)
+- Licence: [MIT](LICENSE). Free and open source.
+
+---
+
+# The details
 
 ## Import the sample maps (free, no account)
 
@@ -43,23 +102,9 @@ Good to know:
 - The scenes are not added to the navigation bar at the top of the screen; open them from the Scenes tab.
 - The folders are found by a hidden mark, so you can rename them or move a scene to another folder: a scene you have moved stays where you put it when it is updated. A scene made by an earlier version of the module is filed in the folder once.
 - Delete a scene you do not want. It will not come back unless you press **Import sample maps** again.
-- Only the GM sees the button.
+- Only the GM sees the buttons.
 
-## Install
-
-From Foundry: Install Module, paste the manifest link from the latest release on this repo's Releases page
-(`.../releases/latest/download/module.json`). Or install by hand:
-
-## Install by hand (self-hosted)
-
-1. Copy this whole folder (`aether-observer`, with `module.json` inside it) into Foundry's user data folder, under
-   `Data/modules/`. So you end up with `Data/modules/aether-observer/module.json`.
-2. Restart Foundry. In your world: Game Settings, Manage Modules, tick **Aether Observer**, save.
-
-On The Forge, a module is installed from a manifest address, which needs the module hosted on the web first (a later
-step). Until then, use it self-hosted.
-
-## Use
+## Sending maps from Vision
 
 1. On Aether Observer, open the story's **Settings** (there is a link on the Vision tab and on Session notes), open **Foundry link** and press **Make a Foundry link**. Copy the
    link (it is only shown once; "Make a new link" replaces it and the old one stops working).
@@ -100,17 +145,6 @@ From a macro: `game.modules.get("aether-observer").api.sync()`.
   each update of a map. They add up on a long session (a hex picture is about 1 to 2 MB): delete the `aether-vision` folder
   now and then, from Foundry's file browser, when no scene needs it. If saving fails, the scene uses the picture straight from
   Aether Observer, which stops showing if you turn the link off.
-
-## Files
-
-- `module.json`: the manifest (minimum v12, verified v13).
-- `scripts/aether-observer.js`: the button, the setting and the sync. Foundry-only code.
-- `scripts/convert.js`: the map to Foundry walls, doors and lights. Plain code, tested with
-  `node --test scripts/convert.test.mjs`.
-- `lang/en.json`: the module's wording.
-- `samples/`: the free sample maps (`index.json` lists them; each is a map file plus its picture).
-
-The map file Vision sends is a Universal VTT file (a picture, walls, doors and lights), read with the link you paste.
 
 ## Updates keep what you did, and ignoring lighting (v0.2.1)
 
@@ -154,3 +188,16 @@ A pasted Vision link still works when you are not connected.
    right now, are left alone and Foundry tells you so.
 
 From a macro: `game.modules.get("aether-observer").api.sendEntry(entry)` or `.sendFolder(folder)`.
+
+## Files
+
+- `module.json`: the manifest (minimum v12, verified v13).
+- `scripts/aether-observer.js`: the buttons, settings, sync, connect and notes. Foundry-only code.
+- `scripts/convert.js`: the map to Foundry walls, doors and lights. Plain code, tested with `node --test scripts/`.
+- `scripts/notes.js` and `scripts/connect.js`: journal-to-notes conversion and the connect helpers, also plain, tested code.
+- `lang/en.json`: the module's wording.
+- `samples/`: the free sample maps (`index.json` lists them; each is a map file plus its picture).
+- `images/`: the preview pictures on this page (not part of the installed module).
+
+The map file Vision sends is a Universal VTT file (a picture, walls, doors and lights).
+
