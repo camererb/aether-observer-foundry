@@ -13,8 +13,11 @@ export function apiBase(oldLink) {
   const match = String(oldLink ?? "").trim().match(/^(https?:\/\/[^/\s]+(?:\/[^\s]*?)?)\/foundry-sync\//);
   if (!match) return DEFAULT_API;
   const base = match[1];
-  if (base.startsWith("http://") && !/^http:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?(\/|$)/.test(base)) return DEFAULT_API;
-  return base;
+  // The personal key only ever goes to the site itself or a test server on this computer, never to whatever host
+  // an old pasted link names (2026-11-13 review).
+  if (/^https:\/\/([a-z0-9-]+\.)*aetherobserver\.com(\/|$)/i.test(base)) return base;
+  if (/^http:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?(\/|$)/.test(base)) return base;
+  return DEFAULT_API;
 }
 
 /** The address the module reads maps from and sends notes to, or null when not connected or nothing picked. */

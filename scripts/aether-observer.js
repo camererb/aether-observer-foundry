@@ -350,9 +350,10 @@ async function applyData(key, data, imageUrl, folder = null) {
     // A personal key in the picture's address would be stored in the scene, where every player can read it, so with a
     // connected account the map is not brought in rather than falling back (2026-11-13). The old per-story link only
     // ever read that one story's maps, so it keeps the fallback.
-    if (String(imageUrl).includes("/foundry-api/")) throw new Error(t("UploadNeeded"));
+    // The old story link too (2026-11-13 review): once notes are on, its token can write drafts, so it must not be
+    // stored in a scene either. Only the free sample maps (shipped inside the module) may use their own address.
+    if (/\/foundry-(api|sync)\//.test(String(imageUrl))) throw new Error(t("UploadNeeded"));
     src = imageUrl;
-    ui.notifications.warn(t("UploadFallback"));
   }
 
   const ignoreLighting = !!game.settings.get(MOD, "globalLight") && data.kind !== "hex";
@@ -520,14 +521,15 @@ async function sendNotes(notes) {
   for (const batch of inSends(notes)) {
     const sent = await postNotes(link, batch);
     if (!sent.ok) {
-      ui.notifications.error(sent.detail);
+      ui.notifications.error(escapeHtml(sent.detail));
       break;
     }
     results.push(...sent.results);
   }
   const sum = summarise(results);
   if (results.length) ui.notifications.info(t("NotesDone", { created: sum.created, updated: sum.updated, unchanged: sum.unchanged }));
-  for (const r of sum.skipped) ui.notifications.warn(`${r.title}: ${r.detail ?? r.outcome}`);
+  // Titles echo journal names a player may have written: never markup (2026-11-13 review).
+  for (const r of sum.skipped) ui.notifications.warn(`${escapeHtml(r.title)}: ${escapeHtml(r.detail ?? r.outcome)}`);
   return sum;
 }
 
@@ -670,6 +672,16 @@ export async function connect() {
     });
     if (answer.status !== "approved" || !answer.key) {
       ui.notifications.warn(t(answer.status === "denied" ? "ConnectDenied" : "ConnectExpired"));
+      return false;
+    }
+    // Check it is the GM's own account: someone who saw the code (on a stream, say) could approve it first and get
+    // this Foundry's notes sent to their story (2026-11-13 review).
+    const { action } = await choose(t("ConnectCheckTitle"), `<p>${escapeHtml(t("ConnectCheck", { account: answer.account ?? "?" }))}</p>`, [
+      { action: "yes", label: t("ConnectCheckYes") },
+      { action: "no", label: t("ConnectCheckNo") },
+    ]);
+    if (action !== "yes") {
+      ui.notifications.warn(t("ConnectNotMine"));
       return false;
     }
     await game.settings.set(MOD, "key", answer.key);

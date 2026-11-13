@@ -53,5 +53,10 @@
   "AETHER_OBSERVER.Disconnect": "Disconnect this browser",
   "AETHER_OBSERVER.Disconnected": "Disconnected. Maps and notes use the pasted Vision link again, if there is one.",
   "AETHER_OBSERVER.Cancel": "Cancel",
-  "AETHER_OBSERVER.UploadNeeded": "Couldn't save the map picture into Foundry, so the map wasn't brought in. Check you may upload files (Game Settings, Configure Permissions, Upload New Files) and try again."
+  "AETHER_OBSERVER.UploadNeeded": "Couldn't save the map picture into Foundry, so the map wasn't brought in. Check you may upload files (Game Settings, Configure Permissions, Upload New Files) and try again.",
+  "AETHER_OBSERVER.ConnectCheckTitle": "Is this your account?",
+  "AETHER_OBSERVER.ConnectCheck": "This Foundry was approved by the Aether Observer account \"{account}\". Is that you?",
+  "AETHER_OBSERVER.ConnectCheckYes": "Yes, it's me",
+  "AETHER_OBSERVER.ConnectCheckNo": "No",
+  "AETHER_OBSERVER.ConnectNotMine": "Not connected. Someone else approved that code. Press Connect to Aether Observer again, and don't show the code on stream."
 }

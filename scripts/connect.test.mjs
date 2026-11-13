@@ -10,6 +10,9 @@ test("the API address comes from an old link, or is the live site", () => {
   assert.equal(apiBase("http://localhost:8000/foundry-sync/abcdefghijklmnopqrst"), "http://localhost:8000");
   // Plain http anywhere but this computer is never used.
   assert.equal(apiBase("http://evil.example/foundry-sync/abcdefghijklmnopqrst"), DEFAULT_API);
+  // Nor any other https host: the key never leaves for a site an old link names.
+  assert.equal(apiBase("https://evil.example/foundry-sync/abcdefghijklmnopqrst"), DEFAULT_API);
+  assert.equal(apiBase("https://aetherobserver.com.evil.example/foundry-sync/abcdefghijklmnopqrst"), DEFAULT_API);
 });
 
 test("the key link needs a real key and a story id", () => {
