@@ -23,6 +23,7 @@
 // Hosting: on The Forge the picture goes into the Assets Library ("forgevtt" source); self-hosted it goes into the Data
 // folder. If saving the picture fails, the scene uses it straight from Aether Observer instead.
 
+import { apiBase, keyLink, safeVerifyUrl, waitForApproval } from "./connect.js";
 import { entryToNote, folderNotes, inSends, summarise } from "./notes.js";
 import { cleanLink, escapeHtml, lightKey, mergeManaged, originShift, pictureName, shiftWall, toFoundry, wallKey, WALL_CONSTS } from "./convert.js";
 
@@ -42,6 +43,10 @@ Hooks.once("init", () => {
     type: String,
     default: "",
   });
+  // Connect to Aether Observer (2026-11-13): the personal key stays in this browser only (players never see it); the story
+  // picked for this Foundry world is a world setting so it is remembered here.
+  game.settings.register(MOD, "key", { scope: "client", config: false, type: String, default: "" });
+  game.settings.register(MOD, "story", { scope: "world", config: false, type: Object, default: {} });
   game.settings.register(MOD, "welcomed", { scope: "world", config: false, type: Boolean, default: false });
   game.settings.register(MOD, "autoCheck", {
     name: "AETHER_OBSERVER.AutoName",
@@ -72,7 +77,7 @@ Hooks.once("init", () => {
 Hooks.once("ready", () => {
   // For a macro, or if the button can't find its place in a future Foundry: game.modules.get("aether-observer").api.sync()
   const mod = game.modules.get(MOD);
-  if (mod) mod.api = { sync, importSamples, sendEntry, sendFolder };
+  if (mod) mod.api = { sync, importSamples, sendEntry, sendFolder, connect, chooseStory, disconnect };
   // The GM's browser asks Aether Observer for new maps every few seconds (a small list, no pictures; a map is fetched only when
   // its update number changed).
   if (game.user?.isGM) {
@@ -115,6 +120,23 @@ Hooks.on("renderSceneDirectory", (_app, html) => {
     }
   });
   row.append(button);
+  const account = document.createElement("button");
+  account.type = "button";
+  account.style.cssText = button.style.cssText;
+  const story = game.settings.get(MOD, "story") ?? {};
+  const connected = Boolean(game.settings.get(MOD, "key"));
+  account.innerHTML = `<i class="fa-solid fa-plug"></i><span>${escapeHtml(connected ? t("ConnectedButton", { story: story.name ?? t("NoStoryYet") }) : t("ConnectButton"))}</span>`;
+  account.addEventListener("click", async (event) => {
+    event.preventDefault();
+    account.disabled = true;
+    try {
+      if (game.settings.get(MOD, "key")) await accountMenu();
+      else await connect();
+    } finally {
+      account.disabled = false;
+    }
+  });
+  row.prepend(account);
   const samples = document.createElement("button");
   samples.type = "button";
   samples.style.cssText = button.style.cssText;
@@ -133,6 +155,27 @@ Hooks.on("renderSceneDirectory", (_app, html) => {
   if (actions) actions.after(row);
   else (root.querySelector(".directory-header") ?? root).prepend(row);
 });
+
+/** Where this Foundry reads maps from and sends notes to: the connected account's story when there is one, else the old
+ *  pasted link. Says what is missing when `manual`. */
+function currentLink({ manual = true } = {}) {
+  const raw = String(game.settings.get(MOD, "link") ?? "").trim();
+  const key = game.settings.get(MOD, "key");
+  if (key) {
+    const story = game.settings.get(MOD, "story") ?? {};
+    const link = keyLink(apiBase(raw), key, story.id);
+    if (link) return link;
+    if (manual) ui.notifications.warn(t("PickStory"));
+    return null;
+  }
+  if (!raw) {
+    if (manual) ui.notifications.warn(t("NoLink"));
+    return null;
+  }
+  const link = cleanLink(raw);
+  if (!link && manual) ui.notifications.error(t("BadLink"));
+  return link;
+}
 
 /**
  * Free sample maps: a few ready-made scenes shipped inside the module (samples/index.json), so nobody needs an account or a
@@ -304,6 +347,10 @@ async function applyData(key, data, imageUrl, folder = null) {
     console.warn(`${MOD} | picture fetch failed`, err);
   }
   if (!src) {
+    // A personal key in the picture's address would be stored in the scene, where every player can read it, so with a
+    // connected account the map is not brought in rather than falling back (2026-11-13). The old per-story link only
+    // ever read that one story's maps, so it keeps the fallback.
+    if (String(imageUrl).includes("/foundry-api/")) throw new Error(t("UploadNeeded"));
     src = imageUrl;
     ui.notifications.warn(t("UploadFallback"));
   }
@@ -367,16 +414,8 @@ async function applyData(key, data, imageUrl, folder = null) {
  */
 export async function sync({ manual = true } = {}) {
   if (!game.user?.isGM) return [];
-  const raw = game.settings.get(MOD, "link");
-  if (!String(raw ?? "").trim()) {
-    if (manual) ui.notifications.warn(t("NoLink"));
-    return [];
-  }
-  const link = cleanLink(raw);
-  if (!link) {
-    if (manual) ui.notifications.error(t("BadLink"));
-    return [];
-  }
+  const link = currentLink({ manual });
+  if (!link) return [];
 
   if (manual) ui.notifications.info(t("Fetching"));
   const list = await getJson(`${link}/maps`);
@@ -431,7 +470,7 @@ let checking = false;
 /** The automatic check, every few seconds: GM only, off if the GM turned it off, and never two at once. */
 async function checkForUpdates() {
   if (checking || !game.user?.isGM || !game.settings.get(MOD, "autoCheck")) return;
-  if (!String(game.settings.get(MOD, "link") ?? "").trim()) return;
+  if (!currentLink({ manual: false })) return;
   checking = true;
   try {
     await sync({ manual: false });
@@ -470,16 +509,8 @@ async function postNotes(link, notes) {
 
 async function sendNotes(notes) {
   if (!game.user?.isGM) return null;
-  const raw = game.settings.get(MOD, "link");
-  if (!String(raw ?? "").trim()) {
-    ui.notifications.warn(t("NoLink"));
-    return null;
-  }
-  const link = cleanLink(raw);
-  if (!link) {
-    ui.notifications.error(t("BadLink"));
-    return null;
-  }
+  const link = currentLink();
+  if (!link) return null;
   if (!notes.length) {
     ui.notifications.warn(t("NotesNothing"));
     return null;
@@ -560,3 +591,147 @@ Hooks.on("getHeaderControlsJournalEntrySheet", (app, controls) => {
   if (!game.user?.isGM) return;
   controls.push({ label: t("NotesButton"), icon: "fa-solid fa-feather", action: `${MOD}-send-notes`, onClick: () => sendEntry(app.document) });
 });
+
+
+// ---------------------------------------------------------------- Connect to Aether Observer (2026-11-13)
+//
+// "Connect to Aether Observer" asks the site for a short code, opens the site's connect page (and puts the link and the
+// code in a chat message only the GM sees, in case the browser blocked the new tab), and waits while the GM approves it
+// there. Then the key is kept in this browser and the GM picks which TTRPG Log this Foundry world uses.
+
+let connecting = false;
+
+async function postJson(url, body) {
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain" },
+    body: JSON.stringify(body),
+    cache: "no-store",
+    credentials: "omit",
+  });
+  if (!response.ok) throw new Error(await readError(response, t("Unreachable")));
+  return response.json();
+}
+
+/** Opens a small choice box. `buttons` is [{ action, label }]; returns the chosen action and the form's values. Uses
+ *  Foundry's newer dialog where there is one (v13) and the older one otherwise (v12). */
+async function choose(title, content, buttons) {
+  const read = (form) => Object.fromEntries(new FormData(form ?? undefined).entries());
+  const DialogV2 = foundry?.applications?.api?.DialogV2;
+  if (DialogV2) {
+    let values = {};
+    const action = await DialogV2.wait({
+      window: { title },
+      content: `<form>${content}</form>`,
+      buttons: buttons.map((b, i) => ({ action: b.action, label: b.label, default: i === 0, callback: (_e, button) => { values = read(button.form); return b.action; } })),
+      rejectClose: false,
+    });
+    return { action: action ?? null, values };
+  }
+  return new Promise((resolve) => {
+    const entries = {};
+    for (const b of buttons) entries[b.action] = { label: b.label, callback: (html) => resolve({ action: b.action, values: read((html?.[0] ?? html)?.querySelector?.("form")) }) };
+    new Dialog({ title, content: `<form>${content}</form>`, buttons: entries, default: buttons[0]?.action, close: () => resolve({ action: null, values: {} }) }).render(true);
+  });
+}
+
+function refreshButtons() {
+  ui.scenes?.render?.();
+}
+
+/** The whole connect flow. Safe to press again: a second press while one is waiting does nothing. */
+export async function connect() {
+  if (!game.user?.isGM || connecting) return false;
+  connecting = true;
+  try {
+    const base = apiBase(game.settings.get(MOD, "link"));
+    let started;
+    try {
+      started = await postJson(`${base}/foundry-api/connect/start`, { label: String(game.world?.title ?? "Foundry").slice(0, 80) });
+    } catch (err) {
+      ui.notifications.error(escapeHtml(err?.message || t("Unreachable")));
+      return false;
+    }
+    const url = safeVerifyUrl(started.verify_url);
+    if (!url) {
+      ui.notifications.error(t("Unreachable"));
+      return false;
+    }
+    window.open(url, "_blank", "noopener");
+    await ChatMessage.create({
+      content: t("ConnectChat", { url: escapeHtml(url), code: escapeHtml(started.user_code) }),
+      whisper: [game.user.id],
+      speaker: { alias: "Aether Observer" },
+    });
+    ui.notifications.info(t("ConnectWaiting", { code: escapeHtml(started.user_code) }));
+    const answer = await waitForApproval(() => postJson(`${base}/foundry-api/connect/poll`, { device_code: started.device_code }), {
+      interval: started.interval,
+      expiresIn: started.expires_in,
+    });
+    if (answer.status !== "approved" || !answer.key) {
+      ui.notifications.warn(t(answer.status === "denied" ? "ConnectDenied" : "ConnectExpired"));
+      return false;
+    }
+    await game.settings.set(MOD, "key", answer.key);
+    ui.notifications.info(t("ConnectDone"));
+    await chooseStory();
+    refreshButtons();
+    return true;
+  } finally {
+    connecting = false;
+  }
+}
+
+/** Lists the TTRPG Logs the connected account runs and remembers the one picked for this Foundry world. */
+export async function chooseStory() {
+  const key = game.settings.get(MOD, "key");
+  if (!game.user?.isGM || !key) return null;
+  const base = apiBase(game.settings.get(MOD, "link"));
+  const list = await getJson(`${base}/foundry-api/${key}/stories`);
+  if (!list.ok) {
+    ui.notifications.error(escapeHtml(list.detail));
+    if (list.status === 401) await disconnect({ quiet: true });
+    return null;
+  }
+  const stories = list.data.stories ?? [];
+  if (!stories.length) {
+    ui.notifications.warn(t("NoStories"));
+    return null;
+  }
+  let picked = stories[0];
+  if (stories.length > 1) {
+    const current = (game.settings.get(MOD, "story") ?? {}).id;
+    const options = stories
+      .map((s) => `<option value="${escapeHtml(s.id)}"${s.id === current ? " selected" : ""}>${escapeHtml(s.name)}</option>`)
+      .join("");
+    const { action, values } = await choose(t("PickStoryTitle"), `<p>${t("PickStoryHint")}</p><select name="story" style="width:100%">${options}</select>`, [
+      { action: "ok", label: t("PickStoryOk") },
+      { action: "cancel", label: t("Cancel") },
+    ]);
+    if (action !== "ok") return null;
+    picked = stories.find((s) => s.id === values.story) ?? null;
+    if (!picked) return null;
+  }
+  await game.settings.set(MOD, "story", { id: picked.id, name: picked.name });
+  ui.notifications.info(t("StoryPicked", { story: escapeHtml(picked.name) }));
+  refreshButtons();
+  return picked;
+}
+
+/** Forgets the key in this browser. (Removing it on the site stops it everywhere.) */
+export async function disconnect({ quiet = false } = {}) {
+  await game.settings.set(MOD, "key", "");
+  if (!quiet) ui.notifications.info(t("Disconnected"));
+  refreshButtons();
+}
+
+async function accountMenu() {
+  const story = game.settings.get(MOD, "story") ?? {};
+  const { action } = await choose(t("AccountTitle"), `<p>${escapeHtml(t("ConnectedButton", { story: story.name ?? t("NoStoryYet") }))}</p><p>${t("AccountHint")}</p>`, [
+    { action: "story", label: t("PickStoryTitle") },
+    { action: "disconnect", label: t("Disconnect") },
+    { action: "cancel", label: t("Cancel") },
+  ]);
+  if (action === "story") await chooseStory();
+  else if (action === "disconnect") await disconnect();
+}

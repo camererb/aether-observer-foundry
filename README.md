@@ -127,6 +127,21 @@ The map file Vision sends is a Universal VTT file (a picture, walls, doors and l
   (cold blue) on the map give a small, steady light of their own. Turn it off to leave them out. Cave systems now put
   crystals in the Crystal Grotto, the Deep Cavern and sometimes the Lair.
 
+## Connect to Aether Observer (0.6.0, recommended)
+
+Instead of pasting a link for each story, connect your account once:
+
+1. In the **Scenes** tab press **Connect to Aether Observer**. A page on Aether Observer opens (the link and a code are
+   also in a chat message only you can see).
+2. Sign in, check the code matches, tick **Also let it send session notes** if you want that, and press **Approve**.
+   Only approve a code you just started yourself.
+3. Back in Foundry, pick which TTRPG Log this Foundry world uses. The button then reads **Aether Observer: <story>**;
+   press it to pick another story or to disconnect this browser.
+
+Maps and session notes then go through that story. See or remove your connections on Aether Observer at
+`/foundry/connect` (Your Foundry connections); removing one stops it at once. The key is kept in your browser only.
+A pasted Vision link still works when you are not connected.
+
 ## Session notes from Foundry journals
 
 1. On Aether Observer, open the story's **Settings**, **Foundry link**, and tick **Also let Foundry send session notes**. The same Vision link
