@@ -1,9 +1,14 @@
 name: Release
-# Two ways to run it: push a version tag (v0.5.1), or press "Run workflow" on the Actions tab. Either builds the zip from this
-# repo and puts aether-observer.zip and module.json on the release for the version in module.json (making the release if it
-# doesn't exist yet, replacing the files if it does).
+# Three ways to run it, all building the zip from this repo and putting aether-observer.zip and module.json on the release
+# for the version in module.json:
+#  - push to main that changes module.json: makes the release if that version has none yet (a push that doesn't bump the
+#    version leaves the existing release alone);
+#  - push a version tag (v0.5.1);
+#  - press "Run workflow" on the Actions tab (makes the release, or replaces the files on an existing one).
 on:
   push:
+    branches: ["main"]
+    paths: ["module.json"]
     tags: ["v*"]
   workflow_dispatch:
 # Only what a release needs: this job can write releases and nothing else.
@@ -31,7 +36,11 @@ jobs:
           TAG: ${{ steps.ver.outputs.tag }}
         run: |
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" aether-observer.zip module.json --clobber
+            if [ "${GITHUB_EVENT_NAME}" = "push" ] && [ "${GITHUB_REF_TYPE}" = "branch" ]; then
+              echo "$TAG already has a release; bump the version in module.json to make a new one."
+            else
+              gh release upload "$TAG" aether-observer.zip module.json --clobber
+            fi
           else
             gh release create "$TAG" aether-observer.zip module.json --title "$TAG" --generate-notes --target "${GITHUB_SHA}"
           fi
