@@ -39,7 +39,7 @@ export function htmlToText(html) {
 }
 
 /** Text pages in the order Foundry shows them. */
-function textPages(entry) {
+export function textPages(entry) {
   return [...(entry.pages ?? [])]
     .filter((p) => (p.type ?? "text") === "text")
     .sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0) || String(a.name).localeCompare(String(b.name)));
@@ -61,6 +61,18 @@ export function entryToNote(entry, path = []) {
   let body = parts.filter(Boolean).join("\n\n");
   if (body.length > MAX_BODY) body = `${body.slice(0, MAX_BODY - 40).trimEnd()}\n\n(cut short: too long to send)`;
   return { ref: String(entry.id), title, body };
+}
+
+/** One page of an entry as the notes the site takes (2026-11-13: send a single page, not the whole entry). Titled
+ *  "Entry / Page" (with the folder path in front when given); its own ref is "<entry id>.<page id>", so it never
+ *  collides with the whole entry's notes. A page that isn't text (a picture, a PDF) has no text to send. */
+export function pageToNote(entry, page, path = []) {
+  const entryName = String(entry.name ?? "").trim() || "Untitled";
+  const pageName = String(page.name ?? "").trim() || "Untitled page";
+  const title = [...path, entryName, pageName].join(" / ").slice(0, MAX_TITLE);
+  let body = htmlToText(page.text?.content ?? "");
+  if (body.length > MAX_BODY) body = `${body.slice(0, MAX_BODY - 40).trimEnd()}\n\n(cut short: too long to send)`;
+  return { ref: `${entry.id}.${page.id}`, title, body };
 }
 
 /** Everything in a folder and its subfolders, in the order Foundry shows them, each with its path from the folder sent.
@@ -88,4 +100,41 @@ export function summarise(results) {
     else skipped.push(r);
   }
   return { ...count, skipped };
+}
+
+const esc = (text) => String(text ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+const paragraphs = (text) =>
+  String(text ?? "")
+    .split(/\n{2,}/)
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .map((p) => `<p>${esc(p).replace(/\n/g, "<br>")}</p>`)
+    .join("");
+
+/** The "last time" handout page (2026-11-13) from the site's recap: the latest published record, then the open quests.
+ *  Everything from the server is escaped: a record or quest name can never become markup in Foundry. `words` holds the
+ *  module's own wording (headings, the "read the rest" line). */
+export function recapHtml(recap, words) {
+  const parts = [];
+  const rec = recap?.record;
+  if (rec) {
+    const heading = [rec.title ? esc(rec.title) : `${esc(words.record)} ${esc(rec.number)}`, rec.simulated_date ? esc(rec.simulated_date) : ""]
+      .filter(Boolean)
+      .join(" &middot; ");
+    parts.push(`<h2>${heading}</h2>`, paragraphs(rec.text));
+    if (rec.cut) parts.push(`<p><em>${esc(words.cut)}</em></p>`);
+  } else {
+    parts.push(`<p>${esc(words.noRecord)}</p>`);
+  }
+  const quests = recap?.quests ?? [];
+  if (quests.length) {
+    parts.push(`<h2>${esc(words.quests)}</h2><ul>`);
+    for (const q of quests) {
+      const stuck = q.status === "stuck" ? ` <em>(${esc(words.stuck)})</em>` : "";
+      const about = q.description ? `: ${esc(q.description)}` : "";
+      parts.push(`<li><strong>${esc(q.name)}</strong>${stuck}${about}</li>`);
+    }
+    parts.push("</ul>");
+  }
+  return parts.join("");
 }

@@ -199,3 +199,13 @@ export function originShift(oldOrigin, newOrigin, size = GRID_SIZE) {
 export function shiftWall(c, { dx, dy }) {
   return [c[0] + dx, c[1] + dy, c[2] + dx, c[3] + dy];
 }
+
+
+/** The scenes (of `scenes`, each with a `key` flag value) this module made for one story's maps that are no longer on the
+ *  site's list. A scene is only ever picked when its key starts with this story's own fingerprint, so another story's
+ *  scenes, the sample maps and scenes the GM made by hand are never touched (2026-11-13). */
+export function goneScenes(scenes, storyKey, maps) {
+  if (!storyKey || typeof storyKey !== "string") return [];
+  const onList = new Set((maps ?? []).map((m) => `${storyKey}:${m.source_id}`));
+  return scenes.filter((scene) => typeof scene.key === "string" && scene.key.startsWith(`${storyKey}:`) && !onList.has(scene.key));
+}

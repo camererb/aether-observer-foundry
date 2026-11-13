@@ -11,8 +11,9 @@ you record what happened, and the world remembers it. It has two parts, and you 
 
 - **Vision**: maps made by voice or typing on [Vision](https://aetherobserver.com/aether-vision-maps) arrive in Foundry as
   scenes with the picture, grid and scale, walls, doors and torch lights. Hex area maps arrive as your players see them.
-- **Session notes**: send a journal entry, or a whole folder of them, to your Aether Observer game log as session notes,
-  with the folder structure kept in the names.
+- **Session notes**: send a journal entry, a page, or a whole folder of them, to your Aether Observer game log as session
+  notes, with the folder structure kept in the names.
+- **"Last time" handout**: one button shows your players a recap of the last published session and the open quests.
 
 <p align="center">
   <img src="images/hex-region.jpg" alt="The Ashvale, a ten by ten hex region map with a town, a cave and ruins" width="48%">
@@ -124,8 +125,9 @@ the scene it brought in.
 **Keep this Foundry window visible.** The check runs in the GM's browser, and a browser slows a hidden tab right down.
 The setting **Check for new maps every 5 seconds** turns it off.
 
-**A map stays in Foundry** until you delete the scene there. On Aether Observer, the Foundry link panel lists every map
-sent, each with a **Remove** button: that takes it off the list so it stops updating, and leaves the scene in Foundry.
+**A map stays in Foundry** until you delete the scene there (or turn on **Delete a scene when I remove its map** in the module's
+settings, off by default: then pressing Remove on the site also deletes the scene this module made for it, and only that). On Aether Observer, the Foundry link panel lists every map
+sent, each with a **Remove** button: that takes it off the list so it stops updating, and (unless you turned that setting on) leaves the scene in Foundry.
 So players can always go back to an area you sent earlier.
 
 Hex scenes are gridless (the picture has its own faint hex grid) and measured in miles: one hex across is one hex size
@@ -176,18 +178,28 @@ Maps and session notes then go through that story. See or remove your connection
 `/foundry/connect` (Your Foundry connections); removing one stops it at once. The key is kept in your browser only.
 A pasted Vision link still works when you are not connected.
 
+## "Last time" handout (0.7.0)
+
+Needs a connected account. In the **Journal** tab press **Show last time**: the module makes a journal entry
+**Last time on <story>** from your story's latest published record (cut to a short recap) and its open quests, lets every
+player read it, and shows it to them like a handout. Press it again after the next session and the same entry is updated.
+Only what your players can already read on Aether Observer goes in it: published records, and quests the table has
+confirmed and is still on.
+
 ## Session notes from Foundry journals
 
 1. On Aether Observer, open the story's **Settings**, **Foundry link**, and tick **Also let Foundry send session notes**. The same Vision link
    is used; nothing new to paste.
 2. In Foundry, right-click a journal entry and pick **Send to Aether Observer**, or press the same button at the top of an open entry.
+   If the entry has several text pages, you are asked whether to send the whole entry, one page, or every page as its own notes.
    Right-click a journal folder and pick **Send folder to Aether Observer** to send every entry in it and its subfolders.
-3. Each entry becomes one set of session notes on the story, named as in Foundry. A folder keeps its structure in the names
-   ("Season 2 / Session 12"). An entry with several pages gets a heading for each page. Text only: pictures are left out.
+3. Each entry (or page) becomes one set of session notes on the story, named as in Foundry; a single page is named
+   "Entry / Page". A folder keeps its structure in the names ("Season 2 / Session 12"). An entry sent whole gets a heading for
+   each page. Text only: pictures are left out. Notes that came from Foundry show a **From Foundry** mark on the site.
 4. Send again after you edit: the same notes are updated, not copied. Notes already published as a record, or open on the site
    right now, are left alone and Foundry tells you so.
 
-From a macro: `game.modules.get("aether-observer").api.sendEntry(entry)` or `.sendFolder(folder)`.
+From a macro: `game.modules.get("aether-observer").api.sendEntry(entry)`, `.sendPage(entry, page)` or `.sendFolder(folder)`.
 
 ## Files
 

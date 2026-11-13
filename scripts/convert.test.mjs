@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 
-import { cleanLink, DARKNESS_WITH_LIGHTS, escapeHtml, GRID_SIZE, GRID_TYPES, lightColour, lineSegments, pictureName, toFoundry } from "./convert.js";
+import { cleanLink, DARKNESS_WITH_LIGHTS, escapeHtml, GRID_SIZE, GRID_TYPES, goneScenes, lightColour, lineSegments, pictureName, toFoundry } from "./convert.js";
 
 const MAP = {
   story_key: "abcdef0123456789",
@@ -211,4 +211,23 @@ test("names and errors are made safe before they go into a Foundry message", () 
   assert.equal(escapeHtml(`<img src=x onerror="alert('1')">&`), "&lt;img src=x onerror=&quot;alert(&#39;1&#39;)&quot;&gt;&amp;");
   assert.equal(escapeHtml(undefined), "");
   assert.equal(escapeHtml("The Old Inn"), "The Old Inn");
+});
+
+test("only this story's own scenes that fell off the list are picked to delete", () => {
+  const scenes = [
+    { name: "kept", key: "story1:tab-a" },
+    { name: "gone", key: "story1:tab-b" },
+    { name: "other story", key: "story2:tab-b" },
+    { name: "sample", key: "sample-cave" },
+    { name: "by hand", key: undefined },
+    { name: "odd", key: 42 },
+  ];
+  assert.deepEqual(goneScenes(scenes, "story1", [{ source_id: "tab-a" }]).map((x) => x.name), ["gone"]);
+  // Everything removed on the site: only this story's scenes go.
+  assert.deepEqual(goneScenes(scenes, "story1", []).map((x) => x.name), ["kept", "gone"]);
+  // No story fingerprint, nothing is picked.
+  assert.deepEqual(goneScenes(scenes, "", []), []);
+  assert.deepEqual(goneScenes(scenes, undefined, []), []);
+  // A key that merely starts with the same letters is another story.
+  assert.deepEqual(goneScenes([{ name: "x", key: "story10:tab-a" }], "story1", []), []);
 });

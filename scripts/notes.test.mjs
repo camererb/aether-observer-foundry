@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { entryToNote, folderNotes, htmlToText, inSends, summarise } from "./notes.js";
+import { entryToNote, folderNotes, htmlToText, inSends, pageToNote, recapHtml, summarise } from "./notes.js";
 
 test("journal HTML becomes plain text with headings and lists kept", () => {
   const html =
@@ -57,4 +57,38 @@ test("long lists go in several sends, and the answers are added up", () => {
   assert.equal(s.created, 1);
   assert.equal(s.updated, 2);
   assert.equal(s.skipped.length, 1);
+});
+
+test("one page becomes its own notes, titled Entry / Page, with a ref that can't clash with the whole entry", () => {
+  const entry = { id: "e9", name: "Session 12" };
+  const page = { id: "p3", name: "Loot", type: "text", text: { content: "<p>A sword</p>" } };
+  assert.deepEqual(pageToNote(entry, page), { ref: "e9.p3", title: "Session 12 / Loot", body: "A sword" });
+  assert.equal(pageToNote(entry, page, ["Season 2"]).title, "Season 2 / Session 12 / Loot");
+  assert.notEqual(pageToNote(entry, page).ref, entryToNote({ ...entry, pages: [] }).ref);
+  assert.equal(pageToNote(entry, { id: "p4", name: "", type: "image" }).body, "");
+});
+
+const WORDS = { record: "Record", cut: "Read the rest on Aether Observer.", noRecord: "Nothing published yet.", quests: "Open quests", stuck: "stuck" };
+
+test("the handout shows the record and open quests, with everything from the server escaped", () => {
+  const html = recapHtml(
+    {
+      record: { number: 4, title: "The <b>cave</b>", simulated_date: "Day 3", text: "We went in.\n\nIt was dark.", cut: true },
+      quests: [
+        { name: "Find the key", status: "underway", description: "In the <script>cave</script>" },
+        { name: "Cross the river", status: "stuck", description: null },
+      ],
+    },
+    WORDS,
+  );
+  assert.ok(html.startsWith("<h2>The &lt;b&gt;cave&lt;/b&gt; &middot; Day 3</h2><p>We went in.</p><p>It was dark.</p>"));
+  assert.ok(html.includes("<em>Read the rest on Aether Observer.</em>"));
+  assert.ok(html.includes("<li><strong>Find the key</strong>: In the &lt;script&gt;cave&lt;/script&gt;</li>"));
+  assert.ok(html.includes("<li><strong>Cross the river</strong> <em>(stuck)</em></li>"));
+  assert.ok(!html.includes("<script>") && !html.includes("<b>"));
+});
+
+test("a story with nothing published says so, and an untitled record is named by its number", () => {
+  assert.equal(recapHtml({ record: null, quests: [] }, WORDS), "<p>Nothing published yet.</p>");
+  assert.ok(recapHtml({ record: { number: 2, title: null, text: "x", cut: false }, quests: [] }, WORDS).startsWith("<h2>Record 2</h2>"));
 });

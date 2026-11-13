@@ -24,8 +24,8 @@
 // folder. If saving the picture fails, the scene uses it straight from Aether Observer instead.
 
 import { apiBase, keyLink, safeVerifyUrl, waitForApproval } from "./connect.js";
-import { entryToNote, folderNotes, inSends, summarise } from "./notes.js";
-import { cleanLink, escapeHtml, lightKey, mergeManaged, originShift, pictureName, shiftWall, toFoundry, wallKey, WALL_CONSTS } from "./convert.js";
+import { entryToNote, folderNotes, inSends, pageToNote, recapHtml, summarise, textPages } from "./notes.js";
+import { cleanLink, escapeHtml, goneScenes, lightKey, mergeManaged, originShift, pictureName, shiftWall, toFoundry, wallKey, WALL_CONSTS } from "./convert.js";
 
 const MOD = "aether-observer";
 const PICTURE_DIR = "aether-vision";
@@ -56,6 +56,14 @@ Hooks.once("init", () => {
     type: Boolean,
     default: true,
   });
+  game.settings.register(MOD, "removeScenes", {
+    name: "AETHER_OBSERVER.RemoveName",
+    hint: "AETHER_OBSERVER.RemoveHint",
+    scope: "client",
+    config: true,
+    type: Boolean,
+    default: false,
+  });
   game.settings.register(MOD, "glowLights", {
     name: "AETHER_OBSERVER.GlowName",
     hint: "AETHER_OBSERVER.GlowHint",
@@ -77,7 +85,7 @@ Hooks.once("init", () => {
 Hooks.once("ready", () => {
   // For a macro, or if the button can't find its place in a future Foundry: game.modules.get("aether-observer").api.sync()
   const mod = game.modules.get(MOD);
-  if (mod) mod.api = { sync, importSamples, sendEntry, sendFolder, connect, chooseStory, disconnect };
+  if (mod) mod.api = { sync, importSamples, sendEntry, sendPage, sendFolder, showLastTime, connect, chooseStory, disconnect };
   // The GM's browser asks Aether Observer for new maps every few seconds (a small list, no pictures; a map is fetched only when
   // its update number changed).
   if (game.user?.isGM) {
@@ -428,6 +436,7 @@ export async function sync({ manual = true } = {}) {
   }
   lastProblem = null;
   const { story_key: storyKey, maps } = list.data;
+  await removeGoneScenes(storyKey, maps);
   if (!maps.length) {
     if (manual) ui.notifications.warn(t("NothingSent"));
     return [];
@@ -463,6 +472,23 @@ export async function sync({ manual = true } = {}) {
     }
   }
   return changed.map((c) => c.scene);
+}
+
+/** The scenes this module made for a story's maps that are no longer on the site's list (the GM pressed Remove there).
+ *  Only when the GM has turned on "Delete a scene when I remove its map" (off by default: players may still be using
+ *  it), only scenes carrying this module's own mark for this story, and only after the list was read successfully. */
+async function removeGoneScenes(storyKey, maps) {
+  if (!game.settings.get(MOD, "removeScenes")) return;
+  const mine = game.scenes.map((scene) => ({ scene, key: scene.getFlag(MOD, "key") }));
+  for (const { scene } of goneScenes(mine, storyKey, maps)) {
+    try {
+      const name = scene.name;
+      await scene.delete();
+      ui.notifications.info(t("SceneRemoved", { name: escapeHtml(name) }));
+    } catch (err) {
+      console.warn(`${MOD} | couldn't delete ${scene.name}`, err);
+    }
+  }
 }
 
 let lastProblem = null;
@@ -534,10 +560,39 @@ async function sendNotes(notes) {
 }
 
 /** Sends one journal entry (an entry, or its id). */
-export async function sendEntry(entryOrId) {
+export async function sendEntry(entryOrId, { ask = false } = {}) {
   const entry = typeof entryOrId === "string" ? game.journal.get(entryOrId) : entryOrId;
   if (!entry) return null;
+  const pages = textPages(entry);
+  // An entry with several text pages: ask whether to send the whole entry, one page, or each page on its own
+  // (2026-11-13). A macro call (`ask` off) always sends the whole entry, as before.
+  if (ask && pages.length > 1) {
+    const options = pages.map((p) => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name || t("UntitledPage"))}</option>`).join("");
+    const { action, values } = await choose(
+      t("PagesTitle"),
+      `<p>${t("PagesHint")}</p><select name="which" style="width:100%"><option value="whole">${t("PagesWhole")}</option><option value="each">${t("PagesEach")}</option>${options}</select>`,
+      [
+        { action: "send", label: t("PagesSend") },
+        { action: "cancel", label: t("Cancel") },
+      ],
+    );
+    if (action !== "send") return null;
+    if (values.which === "each") return sendNotes(pages.map((p) => pageToNote(entry, p)));
+    if (values.which !== "whole") return sendPage(entry, values.which);
+  }
   return sendNotes([entryToNote(entry)]);
+}
+
+/** Sends one page of a journal entry (the page, or its id) as its own set of notes. */
+export async function sendPage(entryOrId, pageOrId) {
+  const entry = typeof entryOrId === "string" ? game.journal.get(entryOrId) : entryOrId;
+  const page = typeof pageOrId === "string" ? entry?.pages?.get?.(pageOrId) ?? [...(entry?.pages ?? [])].find((p) => p.id === pageOrId) : pageOrId;
+  if (!entry || !page) return null;
+  if ((page.type ?? "text") !== "text") {
+    ui.notifications.warn(t("PageNoText"));
+    return null;
+  }
+  return sendNotes([pageToNote(entry, page)]);
 }
 
 /** Sends every entry in a journal folder and its subfolders, keeping the folder structure in the titles. */
@@ -564,7 +619,7 @@ const entryOption = () => ({
   name: t("NotesButton"),
   icon: '<i class="fa-solid fa-feather"></i>',
   condition: () => game.user?.isGM,
-  callback: (li) => sendEntry(rowId(li, "entry")),
+  callback: (li) => sendEntry(rowId(li, "entry"), { ask: true }),
 });
 const folderOption = () => ({
   name: t("NotesFolderButton"),
@@ -587,11 +642,11 @@ Hooks.on("getFolderContextOptions", (app, options) => {
 // A button in an open journal entry's window header. v12: header buttons; v13: header controls.
 Hooks.on("getJournalSheetHeaderButtons", (app, buttons) => {
   if (!game.user?.isGM) return;
-  buttons.unshift({ label: t("NotesButton"), class: `${MOD}-send-notes`, icon: "fa-solid fa-feather", onclick: () => sendEntry(app.document ?? app.object) });
+  buttons.unshift({ label: t("NotesButton"), class: `${MOD}-send-notes`, icon: "fa-solid fa-feather", onclick: () => sendEntry(app.document ?? app.object, { ask: true }) });
 });
 Hooks.on("getHeaderControlsJournalEntrySheet", (app, controls) => {
   if (!game.user?.isGM) return;
-  controls.push({ label: t("NotesButton"), icon: "fa-solid fa-feather", action: `${MOD}-send-notes`, onClick: () => sendEntry(app.document) });
+  controls.push({ label: t("NotesButton"), icon: "fa-solid fa-feather", action: `${MOD}-send-notes`, onClick: () => sendEntry(app.document, { ask: true }) });
 });
 
 
@@ -747,3 +802,93 @@ async function accountMenu() {
   if (action === "story") await chooseStory();
   else if (action === "disconnect") await disconnect();
 }
+
+
+// ---------------------------------------------------------------- "Last time" handout (2026-11-13)
+//
+// "Show last time" in the Journal tab (GM only) makes, or updates, one journal entry "Last time on <story>" from the story's
+// latest published record and its open quests, lets every player read it, and shows it to them like a handout. Needs a
+// connected account (the recap is read with the personal key, not the old story link).
+
+/** The connected story's address for the recap, or null with a message to the GM. */
+function connectedLink() {
+  const key = game.settings.get(MOD, "key");
+  const story = game.settings.get(MOD, "story") ?? {};
+  const link = key ? keyLink(apiBase(game.settings.get(MOD, "link")), key, story.id) : null;
+  if (!link) ui.notifications.warn(t(key ? "PickStory" : "RecapConnect"));
+  return link;
+}
+
+export async function showLastTime() {
+  if (!game.user?.isGM) return null;
+  const link = connectedLink();
+  if (!link) return null;
+  const got = await getJson(`${link}/recap`);
+  if (!got.ok) {
+    ui.notifications.error(escapeHtml(got.detail));
+    return null;
+  }
+  const recap = got.data;
+  const storyId = (game.settings.get(MOD, "story") ?? {}).id;
+  const name = t("RecapTitle", { story: String(recap.story_name ?? "").slice(0, 120) });
+  const content = recapHtml(recap, {
+    record: t("RecapRecord"),
+    cut: t("RecapCut"),
+    noRecord: t("RecapNothing"),
+    quests: t("RecapQuests"),
+    stuck: t("RecapStuck"),
+  });
+  const observer = CONST?.DOCUMENT_OWNERSHIP_LEVELS?.OBSERVER ?? 2;
+  let entry = game.journal.find((j) => j.getFlag(MOD, "recap") === storyId) ?? null;
+  if (entry) {
+    const page = entry.pages.contents?.[0] ?? [...entry.pages][0];
+    await entry.update({ name, ownership: { default: observer } });
+    if (page) await page.update({ name, "text.content": content });
+    else await entry.createEmbeddedDocuments("JournalEntryPage", [{ name, type: "text", text: { content, format: 1 } }]);
+  } else {
+    entry = await JournalEntry.create({
+      name,
+      ownership: { default: observer },
+      pages: [{ name, type: "text", text: { content, format: 1 } }],
+      flags: { [MOD]: { recap: storyId } },
+    });
+  }
+  // Show it to everyone, like a handout. Foundry moved this between versions; if neither is there, the GM can still
+  // right-click the entry and pick Show Players.
+  const Journal = globalThis.foundry?.documents?.collections?.Journal ?? globalThis.Journal;
+  try {
+    if (!Journal?.show) throw new Error("no show");
+    await Journal.show(entry, { force: true });
+    ui.notifications.info(t("RecapShown"));
+  } catch {
+    entry.sheet?.render(true);
+    ui.notifications.info(t("RecapMade"));
+  }
+  return entry;
+}
+
+Hooks.on("renderJournalDirectory", (_app, html) => {
+  if (!game.user?.isGM) return;
+  const root = html instanceof HTMLElement ? html : html?.[0];
+  if (!root || root.querySelector(`[data-${MOD}-recap]`)) return;
+  const row = document.createElement("div");
+  row.setAttribute(`data-${MOD}-recap`, "1");
+  row.style.cssText = "display:flex;flex:0 0 100%;width:100%;margin:4px 0;gap:4px;";
+  const button = document.createElement("button");
+  button.type = "button";
+  button.style.cssText = "flex:1 1 auto;display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;";
+  button.innerHTML = `<i class="fa-solid fa-scroll"></i><span>${escapeHtml(t("RecapButton"))}</span>`;
+  button.addEventListener("click", async (event) => {
+    event.preventDefault();
+    button.disabled = true;
+    try {
+      await showLastTime();
+    } finally {
+      button.disabled = false;
+    }
+  });
+  row.append(button);
+  const actions = root.querySelector(".header-actions");
+  if (actions) actions.after(row);
+  else (root.querySelector(".directory-header") ?? root).prepend(row);
+});

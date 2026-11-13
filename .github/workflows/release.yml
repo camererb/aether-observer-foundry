@@ -28,7 +28,7 @@ jobs:
             test "v$v" = "${GITHUB_REF_NAME}" || { echo "tag ${GITHUB_REF_NAME} != module.json $v"; exit 1; }
           fi
       - name: Zip the module
-        run: zip -r aether-observer.zip module.json LICENSE README.md scripts lang samples
+        run: zip -r aether-observer.zip module.json LICENSE README.md scripts lang samples -x "*.test.mjs"
       # GitHub's own command line instead of a third-party action: nothing outside GitHub runs with write access to the repo.
       - name: Publish the release
         env:
