@@ -1,0 +1,44 @@
+{
+  "maps": [
+    {
+      "source_id": "sample-area",
+      "scene_name": "The Ashvale",
+      "file": "area.json"
+    },
+    {
+      "source_id": "sample-town",
+      "scene_name": "Coldharbour",
+      "file": "town.json"
+    },
+    {
+      "source_id": "sample-building-1",
+      "scene_name": "The Blue Lantern",
+      "file": "building-1.json"
+    },
+    {
+      "source_id": "sample-cave",
+      "scene_name": "Greyfang Cave",
+      "file": "cave.json"
+    },
+    {
+      "source_id": "sample-cave-below",
+      "scene_name": "Greyfang Cave: Below",
+      "file": "cave-below.json"
+    },
+    {
+      "source_id": "sample-ruin",
+      "scene_name": "Ruins of Old Harrow",
+      "file": "ruin.json"
+    },
+    {
+      "source_id": "sample-ruin-below",
+      "scene_name": "Ruins of Old Harrow: Below",
+      "file": "ruin-below.json"
+    },
+    {
+      "source_id": "sample-crossing",
+      "scene_name": "Ambush at the Ford",
+      "file": "crossing.json"
+    }
+  ]
+}
