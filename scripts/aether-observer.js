@@ -918,13 +918,10 @@ Hooks.on("renderJournalDirectory", (_app, html) => {
     void showMarkCard();
   });
   row.append(button, marks);
-  // Put the row after the whole header, not inside it: in Foundry's Journal tab the header also holds the search box,
-  // and a row squeezed inside it pushed the search box on top of the first entries (seen on v13, 2026-11-14).
-  const header = root.querySelector(".directory-header");
-  if (header) header.after(row);
-  else {
-    const actions = root.querySelector(".header-actions");
-    if (actions) actions.after(row);
-    else root.prepend(row);
-  }
+  // Placement as in 0.7.2. 0.7.3 tried putting the row after the whole header to stop it overlapping the search box, but
+  // on a real v13 Journal tab that left the entry list blank (2026-11-14), so it is back to just after the action
+  // buttons. The overlap with the search box is still open; do not move this without testing in a real Foundry.
+  const actions = root.querySelector(".header-actions");
+  if (actions) actions.after(row);
+  else (root.querySelector(".directory-header") ?? root).prepend(row);
 });
