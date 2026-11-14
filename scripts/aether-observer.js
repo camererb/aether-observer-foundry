@@ -918,10 +918,14 @@ Hooks.on("renderJournalDirectory", (_app, html) => {
     void showMarkCard();
   });
   row.append(button, marks);
-  // Placement as in 0.7.2. 0.7.3 tried putting the row after the whole header to stop it overlapping the search box, but
-  // on a real v13 Journal tab that left the entry list blank (2026-11-14), so it is back to just after the action
-  // buttons. The overlap with the search box is still open; do not move this without testing in a real Foundry.
+  // Placement history: 0.7.2 and 0.7.4 put the row as its own line after the action buttons, which made the header a
+  // third child: the search box was pushed down with a blank gap, and with folders the entry list slid under it (owner's
+  // screenshots, 2026-11-14). 0.7.3 put it after the whole header, which left the entry list blank. 0.7.5 puts the row
+  // INSIDE the existing button bar (a wrapping flex row, like the two native buttons), so the header keeps the same
+  // children it has without our module. Not tried in a real Foundry yet.
   const actions = root.querySelector(".header-actions");
-  if (actions) actions.after(row);
-  else (root.querySelector(".directory-header") ?? root).prepend(row);
+  if (actions) {
+    actions.style.flexWrap = "wrap";
+    actions.append(row);
+  } else (root.querySelector(".directory-header") ?? root).prepend(row);
 });
