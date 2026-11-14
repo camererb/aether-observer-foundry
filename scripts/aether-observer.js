@@ -918,7 +918,13 @@ Hooks.on("renderJournalDirectory", (_app, html) => {
     void showMarkCard();
   });
   row.append(button, marks);
-  const actions = root.querySelector(".header-actions");
-  if (actions) actions.after(row);
-  else (root.querySelector(".directory-header") ?? root).prepend(row);
+  // Put the row after the whole header, not inside it: in Foundry's Journal tab the header also holds the search box,
+  // and a row squeezed inside it pushed the search box on top of the first entries (seen on v13, 2026-11-14).
+  const header = root.querySelector(".directory-header");
+  if (header) header.after(row);
+  else {
+    const actions = root.querySelector(".header-actions");
+    if (actions) actions.after(row);
+    else root.prepend(row);
+  }
 });
