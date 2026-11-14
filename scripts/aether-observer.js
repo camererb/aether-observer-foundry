@@ -26,6 +26,7 @@
 import { apiBase, keyLink, safeVerifyUrl, waitForApproval } from "./connect.js";
 import { entryToNote, folderNotes, inSends, pageToNote, recapHtml, summarise, textPages } from "./notes.js";
 import { cleanLink, escapeHtml, goneScenes, lightKey, mergeManaged, originShift, pictureName, shiftWall, toFoundry, wallKey, WALL_CONSTS } from "./convert.js";
+import { markCardHtml } from "./marks.js";
 
 const MOD = "aether-observer";
 const PICTURE_DIR = "aether-vision";
@@ -867,6 +868,27 @@ export async function showLastTime() {
   return entry;
 }
 
+// ---------------------------------------------------------------- "How to mark notes" card (2026-11-14)
+//
+// A card in the Journal tab (GM only) with the words the site reads in session notes, and one example each. It only shows
+// the card: it reads and sends nothing.
+
+/** Opens the card. Its wording and examples are in marks.js and lang/en.json. */
+export async function showMarkCard() {
+  if (!game.user?.isGM) return;
+  const words = {
+    title: t("MarkTitle"),
+    intro: t("MarkIntro"),
+    foot: t("MarkFoot"),
+    hex: t("MarkHex"),
+    loot: t("MarkLoot"),
+    quest: t("MarkQuest"),
+    lore: t("MarkLore"),
+    question: t("MarkQuestion"),
+  };
+  await choose(t("MarkTitle"), markCardHtml(words), [{ action: "close", label: t("MarkClose") }]);
+}
+
 Hooks.on("renderJournalDirectory", (_app, html) => {
   if (!game.user?.isGM) return;
   const root = html instanceof HTMLElement ? html : html?.[0];
@@ -887,7 +909,15 @@ Hooks.on("renderJournalDirectory", (_app, html) => {
       button.disabled = false;
     }
   });
-  row.append(button);
+  const marks = document.createElement("button");
+  marks.type = "button";
+  marks.style.cssText = button.style.cssText;
+  marks.innerHTML = `<i class="fa-solid fa-circle-question"></i><span>${escapeHtml(t("MarkButton"))}</span>`;
+  marks.addEventListener("click", (event) => {
+    event.preventDefault();
+    void showMarkCard();
+  });
+  row.append(button, marks);
   const actions = root.querySelector(".header-actions");
   if (actions) actions.after(row);
   else (root.querySelector(".directory-header") ?? root).prepend(row);

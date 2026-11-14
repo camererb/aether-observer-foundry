@@ -2,7 +2,7 @@
   "id": "aether-observer",
   "title": "Aether Observer",
   "description": "The Aether Observer module for Foundry. Aether Vision: free sample maps in one click, and your own maps from Aether Vision as Foundry scenes: picture, grid, walls, doors and torch lights, with hex areas as the players see them. Walls and lights it makes are marked as its own, so anything you draw by hand is never touched.",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "compatibility": {
     "minimum": "12",
     "verified": "13"
@@ -27,5 +27,5 @@
   "readme": "https://github.com/camererb/aether-observer-foundry#readme",
   "bugs": "https://github.com/camererb/aether-observer-foundry/issues",
   "manifest": "https://github.com/camererb/aether-observer-foundry/releases/latest/download/module.json",
-  "download": "https://github.com/camererb/aether-observer-foundry/releases/download/v0.7.1/aether-observer.zip"
+  "download": "https://github.com/camererb/aether-observer-foundry/releases/download/v0.7.2/aether-observer.zip"
 }

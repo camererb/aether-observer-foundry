@@ -78,5 +78,15 @@
   "AETHER_OBSERVER.RecapStuck": "stuck",
   "AETHER_OBSERVER.RecapShown": "Showed “Last time” to your players.",
   "AETHER_OBSERVER.RecapMade": "“Last time” is ready. Right-click it in the Journal tab and pick Show Players.",
-  "AETHER_OBSERVER.RecapConnect": "Connect to Aether Observer first (the button in the Scenes tab)."
+  "AETHER_OBSERVER.RecapConnect": "Connect to Aether Observer first (the button in the Scenes tab).",
+  "AETHER_OBSERVER.MarkButton": "How to mark notes",
+  "AETHER_OBSERVER.MarkTitle": "How to mark your notes",
+  "AETHER_OBSERVER.MarkIntro": "Start a line with one of these words and a colon, as in the examples. Aether Observer files the line when you send the entry; every other line stays in the session notes.",
+  "AETHER_OBSERVER.MarkHex": "A note on that hex of the map (column, row). Everyone at the table can read it.",
+  "AETHER_OBSERVER.MarkLoot": "A card on the Loot tab.",
+  "AETHER_OBSERVER.MarkQuest": "A card on the Quests tab.",
+  "AETHER_OBSERVER.MarkLore": "A note on the Lore entry with that name. The name must match exactly one entry.",
+  "AETHER_OBSERVER.MarkQuestion": "Stays in the session notes. It is never used when a chapter is written.",
+  "AETHER_OBSERVER.MarkFoot": "Send the entry again after you change a marked line: the notes are updated, not copied.",
+  "AETHER_OBSERVER.MarkClose": "Close"
 }
